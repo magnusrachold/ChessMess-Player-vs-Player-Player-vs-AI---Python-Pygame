@@ -1,5 +1,3 @@
-from logging import setLogRecordFactory
-
 import numpy as np
 from const import *
 from square import Square

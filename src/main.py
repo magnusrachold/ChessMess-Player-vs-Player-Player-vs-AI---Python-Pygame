@@ -1,12 +1,8 @@
-import os.path
-
-import pygame
 import sys
 
 from const import *
 from gameState import Game
 from move import Move
-from square import Square
 
 class Main:
     def __init__(self):
@@ -68,9 +64,10 @@ class Main:
                         releasedCol = dragger.mouseXCoord // SquareSize
                         releasedRow = dragger.mouseYCoord // SquareSize
                         move = Move.createNewMove(dragger.initialRow, dragger.initialCol, releasedRow, releasedCol)
-                        if board.isValidMove(dragger.piece, move):
+                        matchingMove = next((m for m in dragger.piece.moves if m == move), None)
+                        if matchingMove and board.isValidMove(dragger.piece, move):
                             hasCaptured = board.squares[releasedRow][releasedCol].hasPiece()
-                            board.movePiece(dragger.piece, move)
+                            board.movePiece(dragger.piece, matchingMove)
                             self.game.playSoundEffect(hasCaptured)
                             if board.promotionPending:
                                 self.promotionActive = True

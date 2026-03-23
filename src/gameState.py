@@ -1,8 +1,9 @@
-import pygame
+
 from const import *
 from board import Board
 from dragger import Dragger
 from config import Config
+from square import Square
 
 class Game:
     def __init__(self):
@@ -16,7 +17,8 @@ class Game:
         self.nextTurn = 'black' if self.nextTurn == 'white' else 'white'
 
     def hoverSquare(self, row, col):
-        self.currentHover = self.board.squares[row][col]
+        if Square.isOnBoard(row, col):
+            self.currentHover = self.board.squares[row][col]
 
     def playSoundEffect(self, hasCaptured = False):
         if hasCaptured:

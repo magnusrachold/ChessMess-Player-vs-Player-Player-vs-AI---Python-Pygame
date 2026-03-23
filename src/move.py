@@ -7,7 +7,7 @@ class Move:
         self.isCastle = isCastle
 
     @staticmethod
-    def createNewMove(initialRow, initialCol, destinationRow, destinationCol, isCastle = True):
+    def createNewMove(initialRow, initialCol, destinationRow, destinationCol, isCastle = False):
         initialSquare = Square(initialRow, initialCol)
         destinationSquare = Square(destinationRow, destinationCol)
         return Move(initialSquare, destinationSquare, isCastle)
