@@ -1,2 +1,4 @@
-# ChessMess-Player-vs-Player-Player-vs-AI---Python-Pygame
-python chess game
+# ChessMess - Python Chess Game with PvP and AI Mode
+object-oriented python chess game using the pygame module
+- AI mode in progress...
+- Chaos mode in progress...
