@@ -94,6 +94,7 @@ class Board:
         if piece.colour == 'white':
             self.whiteKingPos = oldKingPos
         else: self.blackKingPos = oldKingPos
+
         return safe
 
     def isAttacked(self, row, col, colour):
@@ -104,7 +105,7 @@ class Board:
                 square = self.squares[r][c]
                 if square.hasPiece() and square.piece.colour == enemyColour:
                     tempMoves = []
-                    self.calculateMoves(square.piece, r, c, tempMoves, isTemporary = True)
+                    self.calculateMoves(square.piece, r, c, tempMoves, isTemporary = True, filterSafe = False)
                     for move in tempMoves:
                         if move.destinationSquare.row == row and move.destinationSquare.col == col:
                             return True
@@ -138,7 +139,7 @@ class Board:
                             piece.addMove(newMove)
 
 
-    def calculateMoves(self, piece, row, col, tempMoves = None, isTemporary = False):
+    def calculateMoves(self, piece, row, col, tempMoves = None, isTemporary = False, filterSafe = True):
 
         def addMove(move):
             if isTemporary:
@@ -170,7 +171,7 @@ class Board:
             for dCol in [1, -1]:
                 possibleCol = col + dCol
                 if Square.isOnBoard(nextRow, possibleCol):
-                    if isTemporary or self.squares[nextRow][possibleCol].hasEnemyPiece(piece.colour):
+                    if self.squares[nextRow][possibleCol].hasEnemyPiece(piece.colour):
                         newMove = Move.createNewMove(row, col, nextRow, possibleCol)
                         addMove(newMove)
 
@@ -207,5 +208,9 @@ class Board:
             case _: pass
 
         if not isTemporary:
-            piece.moves = [m for m in piece.moves if self.isSafeMove(piece, m)]
+            if filterSafe:
+                piece.moves = [m for m in piece.moves if self.isSafeMove(piece, m)]
+        else:
+            if filterSafe:
+                tempMoves[:] = [m for m in tempMoves if self.isSafeMove(piece, m)]
 

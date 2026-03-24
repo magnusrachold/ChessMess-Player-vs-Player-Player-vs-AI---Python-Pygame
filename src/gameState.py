@@ -36,15 +36,15 @@ class Game:
                 square = self.board.squares[r][c]
                 if square.hasPiece() and square.piece.colour == colour:
                     tempMoves = []
-                    self.board.calculateMoves(square.piece, r, c, tempMoves, isTemporary = True)
+                    self.board.calculateMoves(square.piece, r, c, tempMoves, isTemporary = True, filterSafe = True)
                     allMoves.extend(tempMoves)
 
         if len(allMoves) == 0:
             if self.board.isInCheck(colour):
-                print(f"SCHACHMATT! {colour} hat verloren.")
+                print(f"CHECKMATE! {colour} has lost.")
                 return "checkmate"
             else:
-                print("PATT! Unentschieden.")
+                print("STALEMATE! No one has won.")
                 return "stalemate"
         return None
 
