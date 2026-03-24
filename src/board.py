@@ -14,6 +14,7 @@ class Board:
         self.promotionPending = False
         self.whiteKingPos = (7, 4)
         self.blackKingPos = (0, 4)
+        self.enPassantTarget = None
 
     def __create(self):
         for row in range(ROWS):
@@ -67,6 +68,14 @@ class Board:
             if destinationSquare.row == promotionRow:
                 self.promotionPending = True
 
+        # en passant
+        if move.isEnPassant:
+            self.squares[initialSquare.row][destinationSquare.col].piece = None
+        if isinstance(piece, Pawn) and abs(destinationSquare.row - initialSquare.row == 2):
+            self.enPassantTarget = ((initialSquare.row + destinationSquare.row) // 2, initialSquare.col)
+        else:
+            self.enPassantTarget = None
+
         piece.moved = True
         piece.clearMoves()
         self.lastMove = move
@@ -87,6 +96,10 @@ class Board:
                 self.whiteKingPos = (endRow, endCol)
             else:
                 self.blackKingPos = (endRow, endCol)
+        # handle en passant
+        if move.isEnPassant:
+            capturedPawn = self.squares[startRow][endCol].piece
+            self.squares[startRow][endCol].piece = None
         safe = not self.isInCheck(piece.colour)
         # rewind move
         self.squares[startRow][startCol].piece = piece
@@ -94,6 +107,8 @@ class Board:
         if piece.colour == 'white':
             self.whiteKingPos = oldKingPos
         else: self.blackKingPos = oldKingPos
+        if move.isEnPassant:
+            self.squares[startRow][endCol].piece = capturedPawn
 
         return safe
 
@@ -117,7 +132,6 @@ class Board:
 
     def findKingPosistion(self, colour):
         return self.whiteKingPos if colour == 'white' else self.blackKingPos
-
 
     def completePromotion(self, row, col, colour, pieceType):
         classes = {"queen": Queen, "rook": Rook, "bishop": Bishop, "knight": Knight}
@@ -174,6 +188,11 @@ class Board:
                     if self.squares[nextRow][possibleCol].hasEnemyPiece(piece.colour):
                         newMove = Move.createNewMove(row, col, nextRow, possibleCol)
                         addMove(newMove)
+                    # en passant moves
+                    elif (nextRow, possibleCol) == self.enPassantTarget:
+                        if (piece.colour == 'white' and row == 3) or (piece.colour == 'black' and row == 4):
+                            newMove = Move.createNewMove(row, col, nextRow, possibleCol, isEnPassant = True)
+                            addMove(newMove)
 
         def slidingMoves(directions, maxSteps):
             for dRow, dCol in directions:
