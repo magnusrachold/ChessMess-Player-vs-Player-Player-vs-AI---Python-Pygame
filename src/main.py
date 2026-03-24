@@ -78,9 +78,11 @@ class Main:
                                 self.game.updateScreen(self.screen)
                                 status = self.game.isGameOver(self.game.nextTurn)
                                 if status == "checkmate":
-                                    print("Schachmatt!")
+                                    print(f"CHECKMATE! {self.game.nextTurn} has lost!")
                                 elif status == "stalemate":
-                                    print("Patt!")
+                                    print(f"DRAW because {self.game.nextTurn} has no valid move!")
+                                elif status == "insufficientMaterial":
+                                    print("DRAW due to insufficient material!")
 
                     dragger.clearPiece()
 

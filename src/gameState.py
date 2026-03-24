@@ -31,6 +31,7 @@ class Game:
 
     def isGameOver(self, colour):
         allMoves = []
+        remainingPieces = []
         for r in range(ROWS):
             for c in range(COLS):
                 square = self.board.squares[r][c]
@@ -38,6 +39,10 @@ class Game:
                     tempMoves = []
                     self.board.calculateMoves(square.piece, r, c, tempMoves, isTemporary = True, filterSafe = True)
                     allMoves.extend(tempMoves)
+                    remainingPieces.append(square.piece)
+
+        if self.isInsufficientMaterial(remainingPieces):
+            return "insufficientMaterial"
 
         if len(allMoves) == 0:
             if self.board.isInCheck(colour):
@@ -47,6 +52,24 @@ class Game:
                 print("STALEMATE! No one has won.")
                 return "stalemate"
         return None
+
+    def isInsufficientMaterial(self, pieces):
+        if len(pieces) > 4:
+            return False
+        if len(pieces) == 2:
+            return True
+        if len(pieces) == 3:
+            return any(p.name in ['bishop', 'knight'] for p in pieces)
+        if len(pieces) == 4:
+            bishops = [p for p in pieces if p.name == 'bishop']
+            if len(bishops) == 2 and bishops[0].colour != bishops[1].colour:
+                return True
+            knights = [p for p in pieces if p.name == 'knight']
+            if len(knights) == 2:
+                return True
+            if len(bishops) == 1 and len(knights) == 1 and (bishops[0].colour != knights[0].colour):
+                return True
+        return False
 
     # initialize and display background
     def showBackground(self, screen):

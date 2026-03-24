@@ -71,7 +71,7 @@ class Board:
         # en passant
         if move.isEnPassant:
             self.squares[initialSquare.row][destinationSquare.col].piece = None
-        if isinstance(piece, Pawn) and abs(destinationSquare.row - initialSquare.row == 2):
+        if isinstance(piece, Pawn) and abs(destinationSquare.row - initialSquare.row) == 2:
             self.enPassantTarget = ((initialSquare.row + destinationSquare.row) // 2, initialSquare.col)
         else:
             self.enPassantTarget = None
