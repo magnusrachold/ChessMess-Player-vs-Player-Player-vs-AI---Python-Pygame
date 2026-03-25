@@ -14,6 +14,8 @@ class Main:
         self.promotionPos = None
         self.promotionColour = None
         self.promotionRect = None
+        self.running = True
+        self.status = None
 
     def mainloop(self):
         board = self.game.board
@@ -25,6 +27,8 @@ class Main:
 
             if self.promotionActive:
                 self.drawPromotionMenu()
+            if not self.running:
+                self.handleGameEnding(self.getStatusMessage(self.status))
 
             if dragger.isActive:
                 dragger.updateImage(self.screen)
@@ -68,7 +72,7 @@ class Main:
                         if matchingMove and board.isValidMove(dragger.piece, move):
                             hasCaptured = board.squares[releasedRow][releasedCol].hasPiece()
                             board.movePiece(dragger.piece, matchingMove)
-                            self.game.playSoundEffect(hasCaptured)
+                            self.game.playMoveSound(hasCaptured)
                             if board.promotionPending:
                                 self.promotionActive = True
                                 self.promotionPos = (releasedRow, releasedCol)
@@ -76,17 +80,12 @@ class Main:
                             else:
                                 self.game.updateNextTurn()
                                 self.game.updateScreen(self.screen)
-                                status = self.game.isGameOver(self.game.nextTurn)
-                                if status == "checkmate":
-                                    print(f"CHECKMATE! {self.game.nextTurn} has lost!")
-                                elif status == "stalemate":
-                                    print(f"DRAW because {self.game.nextTurn} has no valid move!")
-                                elif status == "insufficientMaterial":
-                                    print("DRAW due to insufficient material!")
-                                elif status == "threefoldRepetition":
-                                    print("DRAW due to threefold repetition!")
-                                elif status == "fiftyMoveRule":
-                                    print("DRAW due to 50 moves without progress!")
+                                self.status = self.game.isGameOver(self.game.nextTurn)
+                                if self.status is not None:
+                                    statusMessage = self.getStatusMessage(self.status)
+                                    self.running = False
+                                    self.handleGameEnding(statusMessage)
+                                    self.game.playEndingSound(self.status)
 
                     dragger.clearPiece()
 
@@ -95,6 +94,11 @@ class Main:
                         self.game.restart()
                         board = self.game.board
                         dragger = self.game.dragger
+                        board.positionHistory = []
+                        board.halfmoveClock = 0
+                        self.game.nextTurn = 'white'
+                        self.running = True
+                        self.status = None
 
                 elif event.type == pygame.QUIT:     # exit
                     pygame.quit()
@@ -110,7 +114,7 @@ class Main:
             selectedType = pieceTypes[choiceIndex]
 
             board.completePromotion(self.promotionPos[0],self.promotionPos[1], self.promotionColour, selectedType)
-            self.game.playSoundEffect(hasCaptured = False)
+            self.game.playMoveSound(hasCaptured = False)
             self.promotionActive = False
             self.promotionRect = None
 
@@ -157,6 +161,34 @@ class Main:
             scaledImage = pygame.transform.smoothscale(img, (innerSize, innerSize))
             offset = padding // 2
             self.screen.blit(scaledImage, (xStart + i * SquareSize + offset, yStart + offset))
+
+    def handleGameEnding(self, statusMessage):
+        overlay = pygame.Surface((WIDTH, HEIGHT))
+        overlay.set_alpha(180)
+        overlay.fill((95, 60, 25))
+        self.screen.blit(overlay, (0, 0))
+
+        font = pygame.font.SysFont('Arial', 50, bold=True)
+        subFont = pygame.font.SysFont('Arial', 28)
+
+        textSurface = font.render(statusMessage, True, (255, 255, 255))
+        textRect = textSurface.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 20))
+
+        retrySurface = subFont.render("Press 'R' to restart the game", True, (200, 200, 200))
+        retryRect = retrySurface.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 40))
+
+        self.screen.blit(textSurface, textRect)
+        self.screen.blit(retrySurface, retryRect)
+
+    def getStatusMessage(self, status):
+        messages = {
+            "checkmate": f"CHECKMATE! {self.game.nextTurn} has lost!",
+            "stalemate": f"DRAW! {self.game.nextTurn} has no valid move!",
+            "insufficientMaterial": "DRAW! insufficient material",
+            "threefoldRepetition": "DRAW! repeated position",
+            "fiftyMoveRule": "DRAW! fifty move rule"
+        }
+        return messages.get(status, "GAME OVER")
 
 main = Main()
 main.mainloop()

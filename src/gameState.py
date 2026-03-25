@@ -20,7 +20,13 @@ class Game:
         if Square.isOnBoard(row, col):
             self.currentHover = self.board.squares[row][col]
 
-    def playSoundEffect(self, hasCaptured = False):
+    def playEndingSound(self, status):
+        if status == 'checkmate':
+            self.config.checkmateSound.play()
+        else:
+            self.config.drawSound.play()
+
+    def playMoveSound(self, hasCaptured = False):
         if hasCaptured:
             self.config.captureSound.play()
         else:
