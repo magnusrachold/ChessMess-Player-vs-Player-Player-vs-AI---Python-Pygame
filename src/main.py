@@ -83,6 +83,10 @@ class Main:
                                     print(f"DRAW because {self.game.nextTurn} has no valid move!")
                                 elif status == "insufficientMaterial":
                                     print("DRAW due to insufficient material!")
+                                elif status == "threefoldRepetition":
+                                    print("DRAW due to threefold repetition!")
+                                elif status == "fiftyMoveRule":
+                                    print("DRAW due to 50 moves without progress!")
 
                     dragger.clearPiece()
 
@@ -114,9 +118,9 @@ class Main:
             self.game.updateScreen(self.screen)
             status = self.game.isGameOver(self.game.nextTurn)
             if status == "checkmate":
-                print("Schachmatt!")
+                print("CHECKMATE!")
             elif status == "stalemate":
-                print("Patt!")
+                print("DRAW!")
 
     def drawPromotionMenu(self):
         if not self.promotionActive:

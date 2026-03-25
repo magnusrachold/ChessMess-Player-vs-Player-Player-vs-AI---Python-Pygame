@@ -35,23 +35,38 @@ class Game:
         for r in range(ROWS):
             for c in range(COLS):
                 square = self.board.squares[r][c]
-                if square.hasPiece() and square.piece.colour == colour:
-                    tempMoves = []
-                    self.board.calculateMoves(square.piece, r, c, tempMoves, isTemporary = True, filterSafe = True)
-                    allMoves.extend(tempMoves)
+                if square.hasPiece():
+                    if square.piece.colour == colour:
+                        tempMoves = []
+                        self.board.calculateMoves(square.piece, r, c, tempMoves, isTemporary = True, filterSafe = True)
+                        allMoves.extend(tempMoves)
                     remainingPieces.append(square.piece)
 
         if self.isInsufficientMaterial(remainingPieces):
             return "insufficientMaterial"
+        if self.checkThreefoldRepetition():
+            return "threefoldRepetition"
+        if self.checkFiftyMoveRule():
+            return "fiftyMoveRule"
 
         if len(allMoves) == 0:
             if self.board.isInCheck(colour):
-                print(f"CHECKMATE! {colour} has lost.")
                 return "checkmate"
             else:
-                print("STALEMATE! No one has won.")
                 return "stalemate"
         return None
+
+    def checkFiftyMoveRule(self):
+        return self.board.halfmoveClock >= 100
+
+    def checkThreefoldRepetition(self):
+        if not self.board.positionHistory:
+            return False
+
+        currentPos = self.board.positionHistory[-1]
+        count = self.board.positionHistory.count(currentPos)
+
+        return count >= 3
 
     def isInsufficientMaterial(self, pieces):
         if len(pieces) > 4:

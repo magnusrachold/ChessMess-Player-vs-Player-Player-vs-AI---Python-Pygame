@@ -15,6 +15,8 @@ class Board:
         self.whiteKingPos = (7, 4)
         self.blackKingPos = (0, 4)
         self.enPassantTarget = None
+        self.positionHistory = []
+        self.halfmoveClock = 0
 
     def __create(self):
         for row in range(ROWS):
@@ -43,6 +45,7 @@ class Board:
     def movePiece(self, piece, move):
         initialSquare = move.initialSquare
         destinationSquare = move.destinationSquare
+        capturedPiece = destinationSquare.piece
         self.squares[initialSquare.row][initialSquare.col].piece = None
         self.squares[destinationSquare.row][destinationSquare.col].piece = piece
         if isinstance(piece, King):
@@ -64,6 +67,7 @@ class Board:
 
         # pawn promotion
         if isinstance(piece, Pawn):
+            self.positionHistory = []  # after a pawn move its impossible to repeat a position
             promotionRow = 0 if piece.colour == 'white' else 7
             if destinationSquare.row == promotionRow:
                 self.promotionPending = True
@@ -76,9 +80,18 @@ class Board:
         else:
             self.enPassantTarget = None
 
+        # increment halfmove clock if needed
+        if isinstance(piece, Pawn) or capturedPiece is not None:
+            self.halfmoveClock = 0
+        else:
+            self.halfmoveClock += 1
+
         piece.moved = True
         piece.clearMoves()
         self.lastMove = move
+        nextTurn = 'white' if piece.colour == 'black' else 'black'
+        positionHash = self.getPositionHash(nextTurn)
+        self.positionHistory.append(positionHash)
 
     def isValidMove(self, piece, move):
         return move in piece.moves
@@ -111,6 +124,30 @@ class Board:
             self.squares[startRow][endCol].piece = capturedPawn
 
         return safe
+
+    def getPositionHash(self, nextTurn):
+        # 1. Die Figuren-Konfiguration
+        boardState = []
+        for r in range(ROWS):
+            for c in range(COLS):
+                p = self.squares[r][c].piece
+                if p:
+                    boardState.append((r, c, p.colour, p.name))
+
+        castlingRights = []
+        for colour in ['white', 'black']:
+            kingPos = self.whiteKingPos if colour == 'white' else self.blackKingPos
+            king = self.squares[kingPos[0]][kingPos[1]].piece
+            if king and not king.moved:
+                rookRow = 0 if colour == 'black' else 7
+                leftRook = self.squares[rookRow][0].piece
+                if leftRook and not leftRook.moved:
+                    castlingRights.append(f"{colour}_can_castle_queenside")
+                rightRook = self.squares[rookRow][7].piece
+                if rightRook and not rightRook.moved:
+                    castlingRights.append(f"{colour}_can_castle_kingside")
+
+        return (tuple(boardState), nextTurn, tuple(castlingRights), self.enPassantTarget)
 
     def isAttacked(self, row, col, colour):
         enemyColour = 'black' if colour == 'white' else 'white'
@@ -213,7 +250,7 @@ class Board:
         def kingMoves():
             slidingMoves(KING_DIRECTIONS, maxSteps = 1)
             # castling
-            if not isTemporary:
+            if not isTemporary and not self.isInCheck(piece.colour):
                 for side in ['kingSide', 'queenSide']:
                     self.checkCastlingMoves(piece, row, col, side)
 
