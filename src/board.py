@@ -17,6 +17,8 @@ class Board:
         self.enPassantTarget = None
         self.positionHistory = []
         self.halfmoveClock = 0
+        self.currentTurn = 'white'
+        self.moveLog = []
 
     def __create(self):
         for row in range(ROWS):
@@ -45,7 +47,14 @@ class Board:
     def movePiece(self, piece, move):
         initialSquare = move.initialSquare
         destinationSquare = move.destinationSquare
-        capturedPiece = destinationSquare.piece
+        move.prevEnPassantTarget = self.enPassantTarget
+        move.prevHalfmoveClock = self.halfmoveClock
+        # save current state of the board for perft-test
+        if move.isEnPassant:
+            move.capturedPiece = self.squares[initialSquare.row][destinationSquare.col].piece
+        else:
+            move.capturedPiece = self.squares[destinationSquare.row][destinationSquare.col].piece
+
         self.squares[initialSquare.row][initialSquare.col].piece = None
         self.squares[destinationSquare.row][destinationSquare.col].piece = piece
         if isinstance(piece, King):
@@ -81,7 +90,7 @@ class Board:
             self.enPassantTarget = None
 
         # increment halfmove clock if needed
-        if isinstance(piece, Pawn) or capturedPiece is not None:
+        if isinstance(piece, Pawn) or move.capturedPiece is not None:
             self.halfmoveClock = 0
         else:
             self.halfmoveClock += 1
@@ -92,6 +101,11 @@ class Board:
         nextTurn = 'white' if piece.colour == 'black' else 'black'
         positionHash = self.getPositionHash(nextTurn)
         self.positionHistory.append(positionHash)
+        self.moveLog.append(move)
+        if self.currentTurn == 'white':
+            self.currentTurn = 'black'
+        else:
+            self.currentTurn = 'white'
 
     def isValidMove(self, piece, move):
         return move in piece.moves
@@ -113,7 +127,9 @@ class Board:
         if move.isEnPassant:
             capturedPawn = self.squares[startRow][endCol].piece
             self.squares[startRow][endCol].piece = None
+
         safe = not self.isInCheck(piece.colour)
+
         # rewind move
         self.squares[startRow][startCol].piece = piece
         self.squares[endRow][endCol].piece = targetPiece
@@ -186,16 +202,82 @@ class Board:
                 if all(not self.squares[row][col + (i * direction)].hasPiece() for i in gapRange):
                     if not self.isInCheck(piece.colour):
                         if all(not self.isAttacked(row, col + (i * direction), piece.colour) for i in range(1, 3)):
-                            newMove = Move.createNewMove(row, col, row, col + 2 * direction, isCastle = True)
+                            newMove = Move.createNewMove(row, col, row, col + 2 * direction, isCastle = True, isFirstMove = True)
                             piece.addMove(newMove)
 
+    # perft-function to test if the move calculation works flawlessly
+    def perft(self, depth):
+        if depth == 0:
+            return 1
 
-    def calculateMoves(self, piece, row, col, tempMoves = None, isTemporary = False, filterSafe = True):
+        nodes = 0
+        moves = self.getAllLegalMoves(self.currentTurn)
+
+        for move in moves:
+            movingPiece = self.squares[move.initialSquare.row][move.initialSquare.col].piece
+
+            self.movePiece(movingPiece, move)
+
+            nodes += self.perft(depth - 1)
+
+            self.undoLastMove()
+
+        return nodes
+
+    # calculates every possible move for any piece of a specific colour
+    def getAllLegalMoves(self, colour):
+        allMoves = []
+        for r in range(ROWS):
+            for c in range(COLS):
+                piece = self.squares[r][c].piece
+                if piece and piece.colour == colour:
+                    self.calculateMoves(piece, r, c, targetList = allMoves)
+
+        return allMoves
+
+    def undoLastMove(self):
+        if len(self.moveLog) > 0:
+            lastMove = self.moveLog.pop()
+            self.undoMove(lastMove)
+
+    def undoMove(self, move):
+        startRow, startCol = move.initialSquare.row, move.initialSquare.col
+        endRow, endCol = move.destinationSquare.row, move.destinationSquare.col
+
+        piece = self.squares[endRow][endCol].piece
+        self.squares[startRow][startCol].piece = piece
+        self.squares[endRow][endCol].piece = None
+
+        if move.capturedPiece:
+            if move.isEnPassant:
+                self.squares[startRow][endCol].piece = move.capturedPiece
+            else:
+                self.squares[endRow][endCol].piece = move.capturedPiece
+
+        if isinstance(piece, King):
+            if piece.colour == 'white':
+                self.whiteKingPos = (startRow, startCol)
+            else:
+                self.blackKingPos = (startRow, startCol)
+
+        self.enPassantTarget = move.prevEnPassantTarget
+        self.halfmoveClock = move.prevHalfmoveClock
+        if move.isFirstMove:
+            piece.moved = False
+
+        self.currentTurn = 'white' if self.currentTurn == 'black' else 'black'
+
+
+    def calculateMoves(self, piece, row, col, tempMoves = None, isTemporary = False, filterSafe = True, targetList = None):
+
+        if not isTemporary:
+            piece.clearMoves()
 
         def addMove(move):
             if isTemporary:
                 tempMoves.append(move)
-            else: piece.addMove(move)
+            else:
+                piece.addMove(move)
 
         def knightMoves():
             for dRow, dCol in KNIGHT_DIRECTIONS:
@@ -203,7 +285,7 @@ class Board:
                 possibleCol = col + dCol
                 if Square.isOnBoard(possibleRow, possibleCol):
                     if self.squares[possibleRow][possibleCol].isEmptyOrEnemy(piece.colour):
-                        newMove = Move.createNewMove(row, col, possibleRow, possibleCol)
+                        newMove = Move.createNewMove(row, col, possibleRow, possibleCol, isFirstMove = not piece.moved)
                         addMove(newMove)
 
         def pawnMoves():
@@ -211,19 +293,19 @@ class Board:
              # standard (vertical) moves
             if not isTemporary:
                 if Square.isOnBoard(nextRow, col) and self.squares[nextRow][col].isEmpty():
-                    newMove = Move.createNewMove(row, col, nextRow, col)
+                    newMove = Move.createNewMove(row, col, nextRow, col, isFirstMove = not piece.moved)
                     addMove(newMove)
                     if not piece.moved:
                         possibleRow = row + piece.direction * 2
                         if self.squares[possibleRow][col].isEmpty():
-                            newMove = Move.createNewMove(row, col, possibleRow, col)
+                            newMove = Move.createNewMove(row, col, possibleRow, col, isFirstMove = not piece.moved)
                             addMove(newMove)
             # capturing (diagonal) moves
             for dCol in [1, -1]:
                 possibleCol = col + dCol
                 if Square.isOnBoard(nextRow, possibleCol):
                     if self.squares[nextRow][possibleCol].hasEnemyPiece(piece.colour):
-                        newMove = Move.createNewMove(row, col, nextRow, possibleCol)
+                        newMove = Move.createNewMove(row, col, nextRow, possibleCol, isFirstMove = not piece.moved)
                         addMove(newMove)
                     # en passant moves
                     elif (nextRow, possibleCol) == self.enPassantTarget:
@@ -238,10 +320,10 @@ class Board:
                     possibleCol = col + dCol * i
                     if Square.isOnBoard(possibleRow, possibleCol):
                         if self.squares[possibleRow][possibleCol].isEmpty():
-                            newMove = Move.createNewMove(row, col, possibleRow, possibleCol)
+                            newMove = Move.createNewMove(row, col, possibleRow, possibleCol, isFirstMove = not piece.moved)
                             addMove(newMove)
                         elif self.squares[possibleRow][possibleCol].hasEnemyPiece(piece.colour):
-                            newMove = Move.createNewMove(row, col, possibleRow, possibleCol)
+                            newMove = Move.createNewMove(row, col, possibleRow, possibleCol, isFirstMove = not piece.moved)
                             addMove(newMove)
                             break
                         else: break
@@ -250,7 +332,7 @@ class Board:
         def kingMoves():
             slidingMoves(KING_DIRECTIONS, maxSteps = 1)
             # castling
-            if not isTemporary and not self.isInCheck(piece.colour):
+            if not isTemporary and not self.isInCheck(piece.colour) and not piece.moved:
                 for side in ['kingSide', 'queenSide']:
                     self.checkCastlingMoves(piece, row, col, side)
 
@@ -266,7 +348,12 @@ class Board:
         if not isTemporary:
             if filterSafe:
                 piece.moves = [m for m in piece.moves if self.isSafeMove(piece, m)]
+                for m in piece.moves:
+                    if targetList is not None:
+                        targetList.append(m)
         else:
             if filterSafe:
                 tempMoves[:] = [m for m in tempMoves if self.isSafeMove(piece, m)]
+
+
 

@@ -1,4 +1,5 @@
 import sys
+import time
 
 from const import *
 from gameState import Game
@@ -190,6 +191,48 @@ class Main:
         }
         return messages.get(status, "GAME OVER")
 
+    def runPerftTest(self, board, depth):
+        print(f"Starting Perft-Test: Depth {depth}")
+        startTime = time.time()
+
+        totalNodes = board.perft(depth)
+
+        endTime = time.time()
+        duration = endTime - startTime
+        nodesPerSecond = int(totalNodes / duration) if duration > 0 else totalNodes
+
+        print(f"--- Perft result ---")
+        print(f"Nodes found: {totalNodes}")
+        print(f"duration: {duration:.3f} seconds")
+        print(f"speed: {nodesPerSecond} nodes/s")
+        print("-----------------")
+
+    def perftDivide(self, board, depth):
+        moves = board.getAllLegalMoves(board.currentTurn)
+
+        totalNodes = 0
+
+        for move in moves:
+            board.movePiece(board.squares[move.initialSquare.row][move.initialSquare.col].piece, move)
+            nodesForMove = board.perft(depth - 1)
+            board.undoLastMove()
+
+            print(f"{move}: {nodesForMove}")
+            totalNodes += nodesForMove
+
+        print(f"\nTotal sum at depth {depth}: {totalNodes}")
+
+    def parseMove(self, uci: str) -> Move:
+        colMap = {'a': 0, 'b': 1, 'c': 2, 'd': 3,
+                  'e': 4, 'f': 5, 'g': 6, 'h': 7}
+        startCol = colMap[uci[0]]
+        startRow = 8 - int(uci[1])
+        endCol = colMap[uci[2]]
+        endRow = 8 - int(uci[3])
+
+        return Move.createNewMove(startRow, startCol, endRow, endCol)
+
 main = Main()
 main.mainloop()
+
 
