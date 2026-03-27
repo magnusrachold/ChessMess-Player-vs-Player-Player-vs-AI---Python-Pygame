@@ -6,10 +6,14 @@ class Move:
         self.destinationSquare = destinationSquare
         self.isCastle = isCastle
         self.isEnPassant = isEnPassant
+        self.isPromotion = False
         self.capturedPiece = None
+        self.promotionPiece = None
         self.prevEnPassantTarget = None
         self.prevHalfmoveClock = 0
         self.isFirstMove = isFirstMove
+        self.prevZobristHash = None
+        self.prevCastleRights = None
 
     @staticmethod
     def createNewMove(initialRow, initialCol, destinationRow, destinationCol, isCastle = False, isEnPassant = False, isFirstMove = False):

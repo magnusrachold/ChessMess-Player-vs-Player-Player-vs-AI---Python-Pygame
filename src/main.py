@@ -107,6 +107,7 @@ class Main:
 
             pygame.display.update()
 
+
     def handlePromotion(self, pos, board):
         if self.promotionRect and self.promotionRect.collidepoint(pos):
             xCoord, yCoord = pos
@@ -126,6 +127,7 @@ class Main:
                 print("CHECKMATE!")
             elif status == "stalemate":
                 print("DRAW!")
+
 
     def drawPromotionMenu(self):
         if not self.promotionActive:
@@ -163,6 +165,7 @@ class Main:
             offset = padding // 2
             self.screen.blit(scaledImage, (xStart + i * SquareSize + offset, yStart + offset))
 
+
     def handleGameEnding(self, statusMessage):
         overlay = pygame.Surface((WIDTH, HEIGHT))
         overlay.set_alpha(180)
@@ -181,6 +184,7 @@ class Main:
         self.screen.blit(textSurface, textRect)
         self.screen.blit(retrySurface, retryRect)
 
+
     def getStatusMessage(self, status):
         messages = {
             "checkmate": f"CHECKMATE! {self.game.nextTurn} has lost!",
@@ -190,6 +194,7 @@ class Main:
             "fiftyMoveRule": "DRAW! fifty move rule"
         }
         return messages.get(status, "GAME OVER")
+
 
     def runPerftTest(self, board, depth):
         print(f"Starting Perft-Test: Depth {depth}")
@@ -207,6 +212,7 @@ class Main:
         print(f"speed: {nodesPerSecond} nodes/s")
         print("-----------------")
 
+
     def perftDivide(self, board, depth):
         moves = board.getAllLegalMoves(board.currentTurn)
 
@@ -222,6 +228,7 @@ class Main:
 
         print(f"\nTotal sum at depth {depth}: {totalNodes}")
 
+
     def parseMove(self, uci: str) -> Move:
         colMap = {'a': 0, 'b': 1, 'c': 2, 'd': 3,
                   'e': 4, 'f': 5, 'g': 6, 'h': 7}
@@ -233,6 +240,7 @@ class Main:
         return Move.createNewMove(startRow, startCol, endRow, endCol)
 
 main = Main()
-main.mainloop()
+#main.mainloop()
+main.runPerftTest(main.game.board, 5)
 
 
