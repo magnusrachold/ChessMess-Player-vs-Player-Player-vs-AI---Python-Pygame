@@ -14,11 +14,12 @@ class Move:
         self.isFirstMove = isFirstMove
         self.prevZobristHash = None
         self.prevCastleRights = None
+        self.prevMovedState = False
 
     @staticmethod
     def createNewMove(initialRow, initialCol, destinationRow, destinationCol, isCastle = False, isEnPassant = False, isFirstMove = False):
-        initialSquare = Square(initialRow, initialCol)
-        destinationSquare = Square(destinationRow, destinationCol)
+        initialSquare = (initialRow, initialCol)
+        destinationSquare = (destinationRow, destinationCol)
         return Move(initialSquare, destinationSquare, isCastle, isEnPassant, isFirstMove)
 
     def __eq__(self, other):
@@ -36,4 +37,4 @@ class Move:
         filesToCols = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
         colsToFiles = {v: k for k, v in filesToCols.items()}
 
-        return colsToFiles[square.col] + rowsToRanks[square.row]
+        return colsToFiles[square[1]] + rowsToRanks[square[0]]

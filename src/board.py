@@ -54,32 +54,33 @@ class Board:
         # safe old hash for undo
         move.prevZobristHash = self.zobristHash
 
-        initialSquare = move.initialSquare
-        destinationSquare = move.destinationSquare
+        initialRow, initialCol = move.initialSquare[0], move.initialSquare[1]
+        destinationRow, destinationCol = move.destinationSquare[0], move.destinationSquare[1]
         self.currentMove = move
         move.prevEnPassantTarget = self.enPassantTarget
         move.prevHalfmoveClock = self.halfmoveClock
         move.prevCastleRights = self.castleRights[:]
+        move.prevMovedState = piece.moved
 
         # save current state of the board for perft
         if move.isEnPassant:
-            move.capturedPiece = self.squares[initialSquare.row][destinationSquare.col].piece
+            move.capturedPiece = self.squares[initialRow][destinationCol].piece
         else:
-            move.capturedPiece = self.squares[destinationSquare.row][destinationSquare.col].piece
+            move.capturedPiece = self.squares[destinationRow][destinationCol].piece
 
         # "delete" old position from zobrist hash
         pieceIndex = pieceZobristIndex(piece.colour, piece.name)
-        fromIndex = initialSquare.row * 8 + initialSquare.col
+        fromIndex = initialRow * 8 + initialCol
         self.zobristHash ^= PIECEKEYS[pieceIndex][fromIndex]
 
         if move.capturedPiece and not move.isEnPassant:
             capturedIndex = pieceZobristIndex(move.capturedPiece.colour, move.capturedPiece.name)
-            toIndex = destinationSquare.row * 8 + destinationSquare.col
+            toIndex = destinationRow * 8 + destinationCol
             self.zobristHash ^= PIECEKEYS[capturedIndex][toIndex]
 
         if move.isEnPassant:
-            enPassantRow = initialSquare.row
-            enPassantCol = destinationSquare.col
+            enPassantRow = initialRow
+            enPassantCol = destinationCol
             enPassantPiece = self.squares[enPassantRow][enPassantCol].piece
             enPassantIndex = pieceZobristIndex(enPassantPiece.colour, enPassantPiece.name)
             self.zobristHash ^= PIECEKEYS[enPassantIndex][enPassantRow * 8 + enPassantCol]
@@ -92,60 +93,60 @@ class Board:
             self.zobristHash ^= ENPASSANTKEYS[self.enPassantTarget[1]]
 
         # execute move
-        self.squares[initialSquare.row][initialSquare.col].piece = None
-        self.squares[destinationSquare.row][destinationSquare.col].piece = piece
+        self.squares[initialRow][initialCol].piece = None
+        self.squares[destinationRow][destinationCol].piece = piece
 
         if piece.name == 'king':
             if piece.colour == 'white':
-                self.whiteKingPos = (destinationSquare.row, destinationSquare.col)
+                self.whiteKingPos = (destinationRow, destinationCol)
                 self.castleRights[0] = False
                 self.castleRights[1] = False
             else:
-                self.blackKingPos = (destinationSquare.row, destinationSquare.col)
+                self.blackKingPos = (destinationRow, destinationCol)
                 self.castleRights[2] = False
                 self.castleRights[3] = False
 
         # castling rights
-        if initialSquare.row == 7 and initialSquare.col == 0 or destinationSquare.row == 7 and destinationSquare.col == 0:
+        if initialRow == 7 and initialCol == 0 or destinationRow == 7 and destinationCol == 0:
             self.castleRights[1] = False
-        if initialSquare.row == 7 and initialSquare.col == 7 or destinationSquare.row == 7 and destinationSquare.col == 7:
+        if initialRow == 7 and initialCol == 7 or destinationRow == 7 and destinationCol == 7:
             self.castleRights[0] = False
-        if initialSquare.row == 0 and initialSquare.col == 0 or destinationSquare.row == 0 and destinationSquare.col == 0:
+        if initialRow == 0 and initialCol == 0 or destinationRow == 0 and destinationCol == 0:
             self.castleRights[3] = False
-        if initialSquare.row == 0 and initialSquare.col == 7 or destinationSquare.row == 0 and destinationSquare.col == 7:
+        if initialRow == 0 and initialCol == 7 or destinationRow == 0 and destinationCol == 7:
             self.castleRights[2] = False
 
         # castling
         if move.isCastle:
-            if destinationSquare.col == 6:
-                rook = self.squares[destinationSquare.row][7].piece
-                self.squares[destinationSquare.row][7].piece = None
-                self.squares[destinationSquare.row][5].piece = rook
+            if destinationCol == 6:
+                rook = self.squares[destinationRow][7].piece
+                self.squares[destinationRow][7].piece = None
+                self.squares[destinationRow][5].piece = rook
 
-            elif destinationSquare.col == 2:
-                rook = self.squares[destinationSquare.row][0].piece
-                self.squares[destinationSquare.row][0].piece = None
-                self.squares[destinationSquare.row][3].piece = rook
+            elif destinationCol == 2:
+                rook = self.squares[destinationRow][0].piece
+                self.squares[destinationRow][0].piece = None
+                self.squares[destinationRow][3].piece = rook
 
         # pawn promotion
         if piece.name == 'pawn':
             self.positionHistory = []  # after a pawn move its impossible to repeat a position
             promotionRow = 0 if piece.colour == 'white' else 7
-            if destinationSquare.row == promotionRow:
+            if destinationRow == promotionRow:
                 move.isPromotion = True
                 move.promotionPiece = Queen(piece.colour)
                 self.promotionPending = True
 
         # en passant
         if move.isEnPassant:
-            self.squares[initialSquare.row][destinationSquare.col].piece = None
-        if piece.name == 'pawn' and abs(destinationSquare.row - initialSquare.row) == 2:
-            self.enPassantTarget = ((initialSquare.row + destinationSquare.row) // 2, initialSquare.col)
+            self.squares[initialRow][destinationCol].piece = None
+        if piece.name == 'pawn' and abs(destinationRow - initialRow) == 2:
+            self.enPassantTarget = ((initialRow + destinationRow) // 2, initialCol)
         else:
             self.enPassantTarget = None
 
         # increment halfmove clock if needed
-        if piece.name == 'pawn' or move.capturedPiece is not None:
+        if piece.name == 'pawn' or move.capturedPiece:
             self.halfmoveClock = 0
         else:
             self.halfmoveClock += 1
@@ -155,24 +156,21 @@ class Board:
         self.lastMove = move
         self.moveLog.append(move)
 
-        if self.currentTurn == 'white':
-            self.currentTurn = 'black'
-        else:
-            self.currentTurn = 'white'
+        self.currentTurn = 'white' if self.currentTurn == 'black' else 'black'
 
         # update zobrist hash
-        toIndex = destinationSquare.row * 8 + destinationSquare.col
+        toIndex = destinationRow * 8 + destinationCol
         newPiece = move.promotionPiece if move.isPromotion else piece
         newIndex = pieceZobristIndex(newPiece.colour, newPiece.name)
         self.zobristHash ^= PIECEKEYS[newIndex][toIndex]
 
         if move.isCastle:
-            if destinationSquare.col == 6:
-                rookFromIndex = destinationSquare.row * 8 + 7
-                rookToIndex = initialSquare.row * 8 + 5
+            if destinationCol == 6:
+                rookFromIndex = destinationRow * 8 + 7
+                rookToIndex = initialRow * 8 + 5
             else:
-                rookFromIndex = initialSquare.row * 8 + 0
-                rookToIndex = initialSquare.row * 8 + 3
+                rookFromIndex = initialRow * 8 + 0
+                rookToIndex = initialRow * 8 + 3
             rookIndex = pieceZobristIndex(piece.colour, 'rook')
             self.zobristHash ^= PIECEKEYS[rookIndex][rookFromIndex]
             self.zobristHash ^= PIECEKEYS[rookIndex][rookToIndex]
@@ -193,10 +191,9 @@ class Board:
 
 
     def isSafeMove(self, piece, move):
-        startRow, startCol = move.initialSquare.row, move.initialSquare.col
-        endRow, endCol = move.destinationSquare.row, move.destinationSquare.col
+        startRow, startCol = move.initialSquare[0], move.initialSquare[1]
+        endRow, endCol = move.destinationSquare[0], move.destinationSquare[1]
         oldKingPos = self.findKingPosistion(piece.colour)
-        enemyColour = 'black' if piece.colour == 'white' else 'white'
 
         targetPiece = self.squares[endRow][endCol].piece
         self.squares[endRow][endCol].piece = piece
@@ -211,9 +208,7 @@ class Board:
             capturedPawn = self.squares[startRow][endCol].piece
             self.squares[startRow][endCol].piece = None
 
-        kingPos = self.whiteKingPos if piece.colour == 'white' else self.blackKingPos
-
-        safe = not self.isSquareAttacked(kingPos[0], kingPos[1], enemyColour)
+        safe = not self.isInCheck(piece.colour)
 
         # rewind move
         self.squares[startRow][startCol].piece = piece
@@ -229,8 +224,8 @@ class Board:
 
     def computePositionHash(self):
         hash = 0
-        for r in range(8):
-            for c in range(8):
+        for r in range(ROWS):
+            for c in range(COLS):
                 p = self.squares[r][c].piece
                 if p:
                     hash ^= PIECEKEYS[pieceZobristIndex(p.colour, p.name)][squareIndex(r, c)]
@@ -314,6 +309,13 @@ class Board:
         gapRange = range(1, 3) if side == 'kingSide' else range(1, 4)
         transitRange = range(1, 3)
 
+        if piece.colour == 'white':
+            if side == 'kingSide' and not self.castleRights[0]: return
+            if side == 'queenSide' and not self.castleRights[1]: return
+        else:
+            if side == 'kingSide' and not self.castleRights[2]: return
+            if side == 'queenSide' and not self.castleRights[3]: return
+
         rook = self.squares[row][rookCol].piece
         if rook and rook.name == 'rook':
             if not rook.moved:
@@ -333,7 +335,7 @@ class Board:
         moves = self.getAllLegalMoves(self.currentTurn)
 
         for move in moves:
-            movingPiece = self.squares[move.initialSquare.row][move.initialSquare.col].piece
+            movingPiece = self.squares[move.initialSquare[0]][move.initialSquare[1]].piece
 
             self.movePiece(movingPiece, move)
 
@@ -351,7 +353,8 @@ class Board:
             for c in range(COLS):
                 piece = self.squares[r][c].piece
                 if piece and piece.colour == colour:
-                    self.calculateMoves(piece, r, c, targetList = allMoves)
+                    legalMoves = self.calculateMoves(piece, r, c)
+                    allMoves.extend(legalMoves)
 
         return allMoves
 
@@ -363,26 +366,24 @@ class Board:
 
 
     def undoMove(self, move):
-        startRow, startCol = move.initialSquare.row, move.initialSquare.col
-        endRow, endCol = move.destinationSquare.row, move.destinationSquare.col
+        startRow, startCol = move.initialSquare[0], move.initialSquare[1]
+        endRow, endCol = move.destinationSquare[0], move.destinationSquare[1]
 
         piece = self.squares[endRow][endCol].piece
 
         if move.isPromotion:
             actualPiece = Pawn(piece.colour)
-            actualPiece.moved = True
         else:
             actualPiece = piece
 
         self.squares[startRow][startCol].piece = actualPiece
+        self.squares[endRow][endCol].piece = None
 
         if move.capturedPiece:
             if move.isEnPassant:
                 self.squares[startRow][endCol].piece = move.capturedPiece
             else:
                 self.squares[endRow][endCol].piece = move.capturedPiece
-        else:
-            self.squares[endRow][endCol].piece = None
 
         if piece.name == 'king':
             if piece.colour == 'white':
@@ -390,10 +391,21 @@ class Board:
             else:
                 self.blackKingPos = (startRow, startCol)
 
+        if move.isCastle:
+            if endCol == 6:
+                rook = self.squares[endRow][5].piece
+                self.squares[endRow][5].piece = None
+                self.squares[endRow][7].piece = rook
+                rook.moved = False
+            elif endCol == 2:
+                rook = self.squares[endRow][3].piece
+                self.squares[endRow][3].piece = None
+                self.squares[endRow][0].piece = rook
+                rook.moved = False
+
         self.enPassantTarget = move.prevEnPassantTarget
         self.halfmoveClock = move.prevHalfmoveClock
-        if move.isFirstMove:
-            piece.moved = False
+        actualPiece.moved = move.prevMovedState
         self.castleRights = move.prevCastleRights
 
         self.zobristHash = move.prevZobristHash
@@ -403,16 +415,12 @@ class Board:
         self.currentTurn = 'white' if self.currentTurn == 'black' else 'black'
 
 
-    def calculateMoves(self, piece, row, col, tempMoves = None, isTemporary = False, filterSafe = True, targetList = None):
-
-        if not isTemporary:
-            piece.clearMoves()
+    def calculateMoves(self, piece, row, col, filterSafe = True):
+        piece.clearMoves()
+        moves = []
 
         def addMove(move):
-            if isTemporary:
-                tempMoves.append(move)
-            else:
-                piece.addMove(move)
+            moves.append(move)
 
         def knightMoves():
             for dRow, dCol in KNIGHT_DIRECTIONS:
@@ -426,15 +434,15 @@ class Board:
         def pawnMoves():
             nextRow = row + piece.direction
              # standard (vertical) moves
-            if not isTemporary:
-                if Square.isOnBoard(nextRow, col) and self.squares[nextRow][col].isEmpty():
-                    newMove = Move.createNewMove(row, col, nextRow, col, isFirstMove = not piece.moved)
-                    addMove(newMove)
-                    if not piece.moved:
-                        possibleRow = row + piece.direction * 2
-                        if self.squares[possibleRow][col].isEmpty():
-                            newMove = Move.createNewMove(row, col, possibleRow, col, isFirstMove = not piece.moved)
-                            addMove(newMove)
+            if Square.isOnBoard(nextRow, col) and self.squares[nextRow][col].isEmpty():
+                newMove = Move.createNewMove(row, col, nextRow, col, isFirstMove = not piece.moved)
+                addMove(newMove)
+                if not piece.moved:
+                    possibleRow = row + piece.direction * 2
+                    if self.squares[possibleRow][col].isEmpty():
+                        newMove = Move.createNewMove(row, col, possibleRow, col, isFirstMove = not piece.moved)
+                        addMove(newMove)
+
             # capturing (diagonal) moves
             for dCol in [1, -1]:
                 possibleCol = col + dCol
@@ -442,6 +450,7 @@ class Board:
                     if self.squares[nextRow][possibleCol].hasEnemyPiece(piece.colour):
                         newMove = Move.createNewMove(row, col, nextRow, possibleCol, isFirstMove = not piece.moved)
                         addMove(newMove)
+
                     # en passant moves
                     elif (nextRow, possibleCol) == self.enPassantTarget:
                         if (piece.colour == 'white' and row == 3) or (piece.colour == 'black' and row == 4):
@@ -467,7 +476,7 @@ class Board:
         def kingMoves():
             slidingMoves(KING_DIRECTIONS, maxSteps = 1)
             # castling
-            if not isTemporary and not self.isInCheck(piece.colour) and not piece.moved:
+            if not self.isInCheck(piece.colour) and not piece.moved:
                 for side in ['kingSide', 'queenSide']:
                     self.checkCastlingMoves(piece, row, col, side)
 
@@ -480,15 +489,15 @@ class Board:
             case King(): kingMoves()
             case _: pass
 
-        if not isTemporary:
-            if filterSafe:
-                piece.moves = [m for m in piece.moves if self.isSafeMove(piece, m)]
-                for m in piece.moves:
-                    if targetList is not None:
-                        targetList.append(m)
-        else:
-            if filterSafe:
-                tempMoves[:] = [m for m in tempMoves if self.isSafeMove(piece, m)]
+        if filterSafe:
+            moves = [m for m in moves if self.isSafeMove(piece, m)]
+
+        piece.moves = moves
+
+        return moves
+
+
+
 
 
 

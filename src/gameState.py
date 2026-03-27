@@ -36,17 +36,12 @@ class Game:
         self.__init__()
 
     def isGameOver(self, colour):
-        allMoves = []
+        allMoves = self.board.getAllLegalMoves(colour)
         remainingPieces = []
         for r in range(ROWS):
             for c in range(COLS):
-                square = self.board.squares[r][c]
-                if square.hasPiece():
-                    if square.piece.colour == colour:
-                        tempMoves = []
-                        self.board.calculateMoves(square.piece, r, c, tempMoves, isTemporary = True, filterSafe = True)
-                        allMoves.extend(tempMoves)
-                    remainingPieces.append(square.piece)
+                if self.board.squares[r][c].hasPiece():
+                    remainingPieces.append(self.board.squares[r][c].piece)
 
         if self.isInsufficientMaterial(remainingPieces):
             return "insufficientMaterial"
@@ -138,8 +133,8 @@ class Game:
             piece = self.dragger.piece
             # highlight possible moves
             for move in piece.moves:
-                colour = '#C86464' if (move.destinationSquare.row + move.destinationSquare.col) % 2 == 0 else '#C84646'
-                rect = (move.destinationSquare.col * SquareSize, move.destinationSquare.row * SquareSize, SquareSize, SquareSize)
+                colour = '#C86464' if (move.destinationSquare[0] + move.destinationSquare[1]) % 2 == 0 else '#C84646'
+                rect = (move.destinationSquare[1] * SquareSize, move.destinationSquare[0] * SquareSize, SquareSize, SquareSize)
                 pygame.draw.rect(screen, colour, rect)
 
     def showLastMove(self, screen):
@@ -147,8 +142,8 @@ class Game:
             initialSquare = self.board.lastMove.initialSquare
             destinationSquare = self.board.lastMove.destinationSquare
             for square in [initialSquare, destinationSquare]:
-                colour = '#C8A864' if (square.row + square.col) % 2 == 0 else '#C89646'
-                rect = (square.col * SquareSize, square.row * SquareSize, SquareSize, SquareSize)
+                colour = '#C8A864' if (square[0] + square[1]) % 2 == 0 else '#C89646'
+                rect = (square[1] * SquareSize, square[0] * SquareSize, SquareSize, SquareSize)
                 pygame.draw.rect(screen, colour, rect)
 
     def showHover(self, screen):

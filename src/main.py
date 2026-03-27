@@ -219,8 +219,10 @@ class Main:
         totalNodes = 0
 
         for move in moves:
-            board.movePiece(board.squares[move.initialSquare.row][move.initialSquare.col].piece, move)
+            board.movePiece(board.squares[move.initialSquare[0]][move.initialSquare[1]].piece, move)
+
             nodesForMove = board.perft(depth - 1)
+
             board.undoLastMove()
 
             print(f"{move}: {nodesForMove}")
@@ -240,7 +242,10 @@ class Main:
         return Move.createNewMove(startRow, startCol, endRow, endCol)
 
 main = Main()
-#main.mainloop()
-main.runPerftTest(main.game.board, 5)
+main.mainloop()
+#move = main.parseMove("")
+#movingPiece = main.game.board.squares[move.initialSquare[0]][move.initialSquare[1]].piece
+#main.game.board.movePiece(movingPiece, move)
+main.runPerftTest(main.game.board, 4)
 
 
