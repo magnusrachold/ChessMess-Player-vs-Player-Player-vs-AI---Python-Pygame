@@ -4,6 +4,7 @@ import time
 from const import *
 from gameState import Game
 from move import Move
+from board import Board
 
 class Main:
     def __init__(self):
@@ -241,11 +242,16 @@ class Main:
 
         return Move.createNewMove(startRow, startCol, endRow, endCol)
 
-main = Main()
-main.mainloop()
-move = main.parseMove("e2e4")
-movingPiece = main.game.board.squares[move.initialSquare[0]][move.initialSquare[1]].piece
-main.game.board.movePiece(movingPiece, move)
-main.runPerftTest(main.game.board, 5)
+#main = Main()
+#main.mainloop()
+#moves = ["e2e4", "c7c5", "e4e5", "c5c4", "g1f3", "a7a6", "f1e2", "c4c3"]
+#for m in moves:
+    #move = main.parseMove(m)
+    #movingPiece = main.game.board.squares[move.initialSquare[0]][move.initialSquare[1]].piece
+    #main.game.board.movePiece(movingPiece, move)
+
+#main.perftDivide(main.game.board, 5)
+board = Board.boardStateFromFen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ")
+print(board.perft(5))
 
 

@@ -1,12 +1,12 @@
 from square import Square
 
 class Move:
-    def __init__(self, initialSquare, destinationSquare, isCastle = False, isEnPassant = False, isFirstMove = False):
+    def __init__(self, initialSquare, destinationSquare, isCastle = False, isEnPassant = False, isFirstMove = False, isPromotion = False):
         self.initialSquare = initialSquare
         self.destinationSquare = destinationSquare
         self.isCastle = isCastle
         self.isEnPassant = isEnPassant
-        self.isPromotion = False
+        self.isPromotion = isPromotion
         self.capturedPiece = None
         self.promotionPiece = None
         self.prevEnPassantTarget = None
@@ -17,10 +17,10 @@ class Move:
         self.prevMovedState = False
 
     @staticmethod
-    def createNewMove(initialRow, initialCol, destinationRow, destinationCol, isCastle = False, isEnPassant = False, isFirstMove = False):
+    def createNewMove(initialRow, initialCol, destinationRow, destinationCol, isCastle = False, isEnPassant = False, isFirstMove = False, isPromotion = False):
         initialSquare = (initialRow, initialCol)
         destinationSquare = (destinationRow, destinationCol)
-        return Move(initialSquare, destinationSquare, isCastle, isEnPassant, isFirstMove)
+        return Move(initialSquare, destinationSquare, isCastle, isEnPassant, isFirstMove, isPromotion)
 
     def __eq__(self, other):
         return self.initialSquare == other.initialSquare and self.destinationSquare == other.destinationSquare
