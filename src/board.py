@@ -478,7 +478,7 @@ class Board:
             # castling
             if not self.isInCheck(piece.colour) and not piece.moved:
                 for side in ['kingSide', 'queenSide']:
-                    self.checkCastlingMoves(piece, row, col, side)
+                   self.checkCastlingMoves(piece, row, col, side)
 
         match piece:
             case Pawn(): pawnMoves()
@@ -492,7 +492,7 @@ class Board:
         if filterSafe:
             moves = [m for m in moves if self.isSafeMove(piece, m)]
 
-        piece.moves = moves
+        piece.moves.extend(moves)
 
         return moves
 

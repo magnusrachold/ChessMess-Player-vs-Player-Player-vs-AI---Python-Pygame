@@ -243,9 +243,9 @@ class Main:
 
 main = Main()
 main.mainloop()
-#move = main.parseMove("")
-#movingPiece = main.game.board.squares[move.initialSquare[0]][move.initialSquare[1]].piece
-#main.game.board.movePiece(movingPiece, move)
-main.runPerftTest(main.game.board, 4)
+move = main.parseMove("e2e4")
+movingPiece = main.game.board.squares[move.initialSquare[0]][move.initialSquare[1]].piece
+main.game.board.movePiece(movingPiece, move)
+main.runPerftTest(main.game.board, 5)
 
 
