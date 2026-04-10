@@ -243,6 +243,7 @@ class Board:
 
 
     def isSquareAttacked(self, row, col, attackerColour):
+        # attacked by knight
         for dRow, dCol in [(2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (1, -2), (-1, 2), (-1, -2)]:
             r, c = row + dRow, col + dCol
             if 0 <= r < 8 and 0 <= c < 8:
@@ -250,6 +251,7 @@ class Board:
                 if p and p.name == 'knight' and p.colour == attackerColour:
                     return True
 
+        # attacked by pawn
         pawnRow = row + (1 if attackerColour == 'white' else -1)
         for pawnCol in [col - 1, col + 1]:
             if 0 <= pawnRow < 8 and 0 <= pawnCol < 8:
@@ -257,6 +259,7 @@ class Board:
                 if p and p.name == 'pawn' and p.colour == attackerColour:
                     return True
 
+        # attacked by king
         for dRow in [-1, 0, 1]:
             for dCol in [-1, 0, 1]:
                 if dRow == 0 and dCol == 0: continue
@@ -269,6 +272,7 @@ class Board:
         slides = [ (((0, 1), (0, -1), (1, 0), (-1, 0)), 'rook'),
                    (((1, 1), (1, -1), (-1, 1), (-1, -1)), 'bishop') ]
 
+        # attacked by sliding pieces (rook, bishop, queen)
         for directions, pieceType in slides:
             for dRow, dCol in directions:
                 r, c = row + dRow, col + dCol
@@ -309,12 +313,13 @@ class Board:
         gapRange = range(1, 3) if side == 'kingSide' else range(1, 4)
         transitRange = range(1, 3)
 
+        # check castling rights
         if piece.colour == 'white':
-            if side == 'kingSide' and not self.castleRights[0]: return
-            if side == 'queenSide' and not self.castleRights[1]: return
+            if side == 'kingSide' and not self.castleRights[0]: return None
+            if side == 'queenSide' and not self.castleRights[1]: return None
         else:
-            if side == 'kingSide' and not self.castleRights[2]: return
-            if side == 'queenSide' and not self.castleRights[3]: return
+            if side == 'kingSide' and not self.castleRights[2]: return None
+            if side == 'queenSide' and not self.castleRights[3]: return None
 
         rook = self.squares[row][rookCol].piece
         if rook and rook.name == 'rook':
@@ -377,6 +382,7 @@ class Board:
         else:
             actualPiece = piece
 
+        # set actual piece especially for promotions
         self.squares[startRow][startCol].piece = actualPiece
         self.squares[endRow][endCol].piece = None
 
@@ -404,6 +410,7 @@ class Board:
                 self.squares[endRow][0].piece = rook
                 rook.moved = False
 
+        # restore board state
         self.enPassantTarget = move.prevEnPassantTarget
         self.halfmoveClock = move.prevHalfmoveClock
         actualPiece.moved = move.prevMovedState
@@ -548,6 +555,7 @@ class Board:
             'K': King, 'k': King,
         }
 
+        # piece positions
         for row, rankString in enumerate(pieceRows.split('/')):
             col = 0
             for c in rankString:
@@ -564,6 +572,7 @@ class Board:
                         board.blackKingPos = (row, col)
                     col += 1
 
+        # set moved state for pawns based on their positions
         for col in range(8):
             whitePawn = board.squares[6][col].piece
             if whitePawn and whitePawn.name == 'pawn' and whitePawn.colour == 'white':
@@ -574,6 +583,7 @@ class Board:
 
         board.currentTurn = 'white' if turn == 'w' else 'black'
 
+        # castling rights
         board.castleRights[0] = 'K' in castling
         board.castleRights[1] = 'Q' in castling
         board.castleRights[2] = 'k' in castling
@@ -600,6 +610,7 @@ class Board:
             rook = board.squares[0][0].piece
             if rook and rook.name == 'rook': rook.moved = False
 
+        # en passant target
         if enPassant != '-':
             enPassantCol = ord(enPassant[0]) - ord('a')
             enPassantRow = 8 - int(enPassant[1])

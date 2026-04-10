@@ -242,8 +242,8 @@ class Main:
 
         return Move.createNewMove(startRow, startCol, endRow, endCol)
 
-#main = Main()
-#main.mainloop()
+main = Main()
+main.mainloop()
 #moves = ["e2e4", "c7c5", "e4e5", "c5c4", "g1f3", "a7a6", "f1e2", "c4c3"]
 #for m in moves:
     #move = main.parseMove(m)
@@ -251,7 +251,9 @@ class Main:
     #main.game.board.movePiece(movingPiece, move)
 
 #main.perftDivide(main.game.board, 5)
-board = Board.boardStateFromFen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ")
-print(board.perft(5))
+#board = Board.boardStateFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1 ")
+#print(board.perft(4))
+
+
 
 
